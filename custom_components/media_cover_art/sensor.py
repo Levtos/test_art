@@ -42,8 +42,10 @@ class MediaCoverArtStatusSensor(CoordinatorEntity[CoverCoordinator], SensorEntit
     @property
     def extra_state_attributes(self) -> dict[str, str | int | None]:
         data: CoverData | None = self.coordinator.data
+        source_state = self.coordinator.hass.states.get(self.coordinator.source_entity_id)
         return {
             "source_entity_id": self.coordinator.source_entity_id,
+            "source_state": source_state.state if source_state else None,
             "track_key": data.track_key if data else None,
             "artist": data.artist if data else None,
             "title": data.title if data else None,
@@ -53,4 +55,5 @@ class MediaCoverArtStatusSensor(CoordinatorEntity[CoverCoordinator], SensorEntit
             "artwork_width": self.coordinator.artwork_width,
             "artwork_height": self.coordinator.artwork_height,
             "artwork_size": self.coordinator.artwork_size,
+            "last_error": self.coordinator.last_error,
         }

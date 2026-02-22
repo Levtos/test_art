@@ -9,10 +9,9 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.event import async_track_state_change_event
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import (
@@ -106,6 +105,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self._album: str | None = None
         self._track_key: str | None = None
         self._last_cover: CoverData | None = None
+        self._last_error: str | None = None
 
         super().__init__(
             hass=hass,
@@ -167,7 +167,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self.hass.async_create_task(self.async_request_refresh())
 
     def _set_track_from_state(self, state: State | None) -> bool:
-        if state is None:
+        if state is None or state.state in {"unavailable", "unknown"}:
             return False
 
         attrs = state.attributes or {}
@@ -185,6 +185,33 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self._track_key = new_key
         return True
 
+    @property
+    def last_error(self) -> str | None:
+        return self._last_error
+
+    def _fallback_data(
+        self,
+        *,
+        track_key: str | None,
+        artist: str | None,
+        title: str | None,
+        album: str | None,
+    ) -> CoverData:
+        if self._last_cover is not None:
+            return self._last_cover
+        return CoverData(
+            source_entity_id=self.source_entity_id,
+            track_key=track_key,
+            artist=artist,
+            title=title,
+            album=album,
+            provider=None,
+            artwork_url=None,
+            content_type="image/jpeg",
+            image=None,
+            last_updated=None,
+        )
+
     async def _async_update_data(self) -> CoverData:
         """Fetch and cache cover data for current track."""
         async with self._lock:
@@ -194,20 +221,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             album = self._album
 
             if not track_key or (not artist and not title):
-                if self._last_cover is not None:
-                    return self._last_cover
-                return CoverData(
-                    source_entity_id=self.source_entity_id,
-                    track_key=None,
-                    artist=artist,
-                    title=title,
-                    album=album,
-                    provider=None,
-                    artwork_url=None,
-                    content_type="image/jpeg",
-                    image=None,
-                    last_updated=None,
-                )
+                return self._fallback_data(track_key=None, artist=artist, title=title, album=album)
 
             try:
                 query = TrackQuery(
@@ -222,27 +236,21 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                     query=query,
                     providers=self.providers,
                 )
-            except (asyncio.TimeoutError, HomeAssistantError) as err:
-                raise UpdateFailed(str(err)) from err
-            except Exception as err:
-                raise UpdateFailed(f"Unexpected error: {err}") from err
+            except Exception as err:  # noqa: BLE001
+                self._last_error = str(err)
+                _LOGGER.warning(
+                    "Cover resolution failed for %s (%s - %s): %s",
+                    self.source_entity_id,
+                    artist,
+                    title,
+                    err,
+                )
+                return self._fallback_data(track_key=track_key, artist=artist, title=title, album=album)
 
             if resolved is None:
-                if self._last_cover is not None:
-                    return self._last_cover
-                return CoverData(
-                    source_entity_id=self.source_entity_id,
-                    track_key=track_key,
-                    artist=artist,
-                    title=title,
-                    album=album,
-                    provider=None,
-                    artwork_url=None,
-                    content_type="image/jpeg",
-                    image=None,
-                    last_updated=None,
-                )
+                return self._fallback_data(track_key=track_key, artist=artist, title=title, album=album)
 
+            self._last_error = None
             data = CoverData(
                 source_entity_id=self.source_entity_id,
                 track_key=track_key,
@@ -257,10 +265,6 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             )
             self._last_cover = data
             return data
-
-
-async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
