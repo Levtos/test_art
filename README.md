@@ -9,6 +9,7 @@ Aktuell: Provider = **iTunes Search API** (kein Login nötig).
 - Image-Entity (z. B. `image.media_cover_art_homepods_cover`)
 - Track-Change-Erkennung: holt neu nur wenn sich `(artist,title,album)` ändert
 - Caching: Das Frontend refetcht nur wenn `image_last_updated` aktualisiert wurde
+- Eigenes Integrations-Icon als SVG (`custom_components/media_cover_art/icon.svg`)
 
 ## Installation
 
