@@ -1,12 +1,11 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.exceptions import HomeAssistantError
 
-from .cover_resolver import ResolvedCover, TrackQuery
+from .models import ResolvedCover, TrackQuery
 
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 
