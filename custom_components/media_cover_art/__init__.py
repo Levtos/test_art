@@ -4,6 +4,7 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import re
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -32,6 +33,20 @@ from .models import TrackQuery
 
 _LOGGER = logging.getLogger(__name__)
 
+_RE_CLEAN = re.compile(
+    r"""
+       \s*
+       (
+           \([^)]*(?:Remix|Edit|Mix)[^)]*\) |
+           \[[^\]]*(?:Remix|Edit|Mix)[^\]]*\] |
+           -\s*.*(?:Remix|Edit|Mix).* |
+           \(?\s*\d+[_:]\d+\s*\)?
+       )
+    """,
+    re.I | re.X,
+)
+_BAD = {"", "none", "null", "unknown", "n/a", "-"}
+
 
 @dataclass(slots=True)
 class CoverData:
@@ -45,6 +60,15 @@ class CoverData:
     content_type: str
     image: bytes | None
     last_updated: datetime | None
+
+
+def _clean_text(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = re.sub(r"\s{2,}", " ", _RE_CLEAN.sub("", value)).strip()
+    if cleaned.lower() in _BAD:
+        return None
+    return cleaned or None
 
 
 def _norm(s: str) -> str:
@@ -81,6 +105,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self._title: str | None = None
         self._album: str | None = None
         self._track_key: str | None = None
+        self._last_cover: CoverData | None = None
 
         super().__init__(
             hass=hass,
@@ -107,7 +132,6 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self.artwork_height = int(artwork_height)
         self.artwork_size = max(self.artwork_width, self.artwork_height)
 
-
     async def async_start(self) -> None:
         """Start listening to media_player state changes and do initial refresh."""
         if self._unsub_state_change is not None:
@@ -119,10 +143,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             self._handle_state_change,
         )
 
-        # Initialize from current state (if available)
         state = self.hass.states.get(self.source_entity_id)
         changed = self._set_track_from_state(state)
-        # Even if not changed, try one refresh on start in case there's already data
         if changed or state is not None:
             await self.async_request_refresh()
 
@@ -142,7 +164,6 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         if not changed:
             return
 
-        # schedule refresh (callback context)
         self.hass.async_create_task(self.async_request_refresh())
 
     def _set_track_from_state(self, state: State | None) -> bool:
@@ -150,17 +171,11 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             return False
 
         attrs = state.attributes or {}
-        artist = attrs.get("media_artist")
-        title = attrs.get("media_title")
-        album = attrs.get("media_album_name")
-
-        # Normalize empty strings to None
-        artist = artist.strip() if isinstance(artist, str) else None
-        title = title.strip() if isinstance(title, str) else None
-        album = album.strip() if isinstance(album, str) else None
+        artist = _clean_text(attrs.get("media_artist"))
+        title = _clean_text(attrs.get("media_title"))
+        album = _clean_text(attrs.get("media_album_name"))
 
         new_key = _build_track_key(artist, title, album)
-
         if new_key == self._track_key:
             return False
 
@@ -179,6 +194,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             album = self._album
 
             if not track_key or (not artist and not title):
+                if self._last_cover is not None:
+                    return self._last_cover
                 return CoverData(
                     source_entity_id=self.source_entity_id,
                     track_key=None,
@@ -211,6 +228,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                 raise UpdateFailed(f"Unexpected error: {err}") from err
 
             if resolved is None:
+                if self._last_cover is not None:
+                    return self._last_cover
                 return CoverData(
                     source_entity_id=self.source_entity_id,
                     track_key=track_key,
@@ -224,7 +243,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                     last_updated=None,
                 )
 
-            return CoverData(
+            data = CoverData(
                 source_entity_id=self.source_entity_id,
                 track_key=track_key,
                 artist=artist,
@@ -236,6 +255,12 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                 image=resolved.image,
                 last_updated=dt_util.utcnow(),
             )
+            self._last_cover = data
+            return data
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -249,7 +274,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     await coordinator.async_start()
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 

@@ -8,19 +8,16 @@ from homeassistant.exceptions import HomeAssistantError
 from .models import ResolvedCover, TrackQuery
 
 ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
-
-# Some Apple endpoints return non-standard content-type headers; allow json parsing anyway.
 _JSON_KW = {"content_type": None}
-
 _RE_ARTWORK_SIZE = re.compile(r"/(\d{2,4})x(\d{2,4})bb\.(jpg|png)$", re.IGNORECASE)
 
 
 def _clean(s: str) -> str:
     s = s.strip().lower()
     s = re.sub(r"\s+", " ", s)
-    # remove "(feat...)" / "[feat...]" fragments (helps radio metadata)
     s = re.sub(r"\((feat\.|featuring).*?\)", "", s, flags=re.IGNORECASE)
     s = re.sub(r"\[(feat\.|featuring).*?\]", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"\s{2,}", " ", s)
     return s.strip()
 
 
@@ -34,7 +31,6 @@ def _score_result(query: TrackQuery, item: dict[str, Any]) -> int:
     r_album = _clean(str(item.get("collectionName", "")))
 
     score = 0
-
     if q_title and r_title:
         if q_title == r_title:
             score += 10
@@ -53,7 +49,6 @@ def _score_result(query: TrackQuery, item: dict[str, Any]) -> int:
         elif q_album in r_album or r_album in q_album:
             score += 1
 
-    # Prefer "song" items
     if str(item.get("wrapperType", "")).lower() == "track":
         score += 1
 
@@ -61,7 +56,6 @@ def _score_result(query: TrackQuery, item: dict[str, Any]) -> int:
 
 
 def _upscale_artwork(url: str, size: int) -> str:
-    # Many Apple artwork URLs end with ".../100x100bb.jpg". We swap to requested size.
     m = _RE_ARTWORK_SIZE.search(url)
     if not m:
         return url
@@ -69,38 +63,47 @@ def _upscale_artwork(url: str, size: int) -> str:
     return _RE_ARTWORK_SIZE.sub(f"/{size}x{size}bb.{ext}", url)
 
 
-async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover | None:
-    if not (query.artist or query.title):
-        return None
-
-    term = " ".join([p for p in [query.artist, query.title] if p])
+async def _search_itunes(session, term: str) -> list[dict[str, Any]]:
     params = {
         "term": term,
         "entity": "song",
         "media": "music",
         "limit": "10",
-        # Country is optional; leaving it out increases global matches.
-        # "country": "DE",
     }
+    async with session.get(ITUNES_SEARCH_URL, params=params, timeout=10) as resp:
+        resp.raise_for_status()
+        payload = await resp.json(**_JSON_KW)
+    results = payload.get("results") if isinstance(payload, dict) else None
+    if not isinstance(results, list):
+        return []
+    return [item for item in results if isinstance(item, dict)]
+
+
+async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover | None:
+    if not (query.artist or query.title):
+        return None
+
+    terms = []
+    term1 = " ".join([p for p in [_clean(query.artist or ""), _clean(query.title or "")] if p])
+    if term1:
+        terms.append(term1)
+    term2 = " ".join([p for p in [_clean(query.title or ""), _clean(query.artist or "")] if p])
+    if term2 and term2 != term1:
+        terms.append(term2)
 
     try:
-        async with session.get(ITUNES_SEARCH_URL, params=params, timeout=10) as resp:
-            resp.raise_for_status()
-            payload = await resp.json(**_JSON_KW)
+        results: list[dict[str, Any]] = []
+        for term in terms:
+            results.extend(await _search_itunes(session, term))
     except Exception as err:
         raise HomeAssistantError(f"iTunes search failed: {err}") from err
 
-    results = payload.get("results") if isinstance(payload, dict) else None
-    if not isinstance(results, list) or not results:
+    if not results:
         return None
 
-    # Pick best scored match
     best: dict[str, Any] | None = None
     best_score = -1
-
     for item in results:
-        if not isinstance(item, dict):
-            continue
         score = _score_result(query, item)
         if score > best_score:
             best_score = score
@@ -113,11 +116,9 @@ async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover |
     if not isinstance(artwork, str) or not artwork:
         return None
 
-    # iTunes liefert quadratische Cover; wir verwenden die größere Kante aus Breite/Höhe.
     target_size = max(100, int(max(query.artwork_width, query.artwork_height)))
     artwork_url = _upscale_artwork(artwork, target_size)
 
-    # Fetch the image bytes
     try:
         async with session.get(artwork_url, timeout=10) as img_resp:
             img_resp.raise_for_status()

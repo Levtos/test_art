@@ -37,11 +37,6 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
         self._attr_content_type = "image/jpeg"
 
     @property
-    def available(self) -> bool:
-        # available when source entity exists; coordinator itself may have no image sometimes
-        return self.coordinator.hass.states.get(self.coordinator.source_entity_id) is not None
-
-    @property
     def image_last_updated(self):
         data: CoverData | None = self.coordinator.data
         return data.last_updated if data else None
