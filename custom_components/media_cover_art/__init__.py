@@ -15,15 +15,20 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ARTWORK_HEIGHT,
     CONF_ARTWORK_SIZE,
+    CONF_ARTWORK_WIDTH,
     CONF_PROVIDERS,
     CONF_SOURCE_ENTITY_ID,
+    DEFAULT_ARTWORK_HEIGHT,
     DEFAULT_ARTWORK_SIZE,
+    DEFAULT_ARTWORK_WIDTH,
     DEFAULT_PROVIDERS,
     DOMAIN,
     PLATFORMS,
 )
-from .cover_resolver import async_resolve_cover, TrackQuery
+from .cover_resolver import async_resolve_cover
+from .models import TrackQuery
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,12 +66,16 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
         self.source_entity_id: str = entry.data[CONF_SOURCE_ENTITY_ID]
-        self.providers: list[str] = list(entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS))
-        self.artwork_size: int = int(entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE))
+        self.providers: list[str] = []
+        self.artwork_size: int = DEFAULT_ARTWORK_SIZE
+        self.artwork_width: int = DEFAULT_ARTWORK_WIDTH
+        self.artwork_height: int = DEFAULT_ARTWORK_HEIGHT
 
         self._session = aiohttp_client.async_get_clientsession(hass)
         self._unsub_state_change: Any | None = None
         self._lock = asyncio.Lock()
+
+        self._update_from_entry(entry)
 
         self._artist: str | None = None
         self._title: str | None = None
@@ -80,6 +89,24 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             update_method=self._async_update_data,
             update_interval=None,  # event-driven
         )
+
+    def _update_from_entry(self, entry: ConfigEntry) -> None:
+        providers = entry.options.get(CONF_PROVIDERS, entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS))
+        self.providers = list(providers) if isinstance(providers, list) else list(DEFAULT_PROVIDERS)
+
+        artwork_width = entry.options.get(
+            CONF_ARTWORK_WIDTH,
+            entry.data.get(CONF_ARTWORK_WIDTH, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH)),
+        )
+        artwork_height = entry.options.get(
+            CONF_ARTWORK_HEIGHT,
+            entry.data.get(CONF_ARTWORK_HEIGHT, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT)),
+        )
+
+        self.artwork_width = int(artwork_width)
+        self.artwork_height = int(artwork_height)
+        self.artwork_size = max(self.artwork_width, self.artwork_height)
+
 
     async def async_start(self) -> None:
         """Start listening to media_player state changes and do initial refresh."""
@@ -170,7 +197,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                     artist=artist,
                     title=title,
                     album=album,
-                    artwork_size=self.artwork_size,
+                    artwork_width=self.artwork_width,
+                    artwork_height=self.artwork_height,
                 )
                 resolved = await async_resolve_cover(
                     session=self._session,
@@ -210,9 +238,15 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             )
 
 
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = CoverCoordinator(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
+
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
     await coordinator.async_start()
 
