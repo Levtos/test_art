@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+import base64
+from typing import Any
+
+from homeassistant.components.camera import Camera
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+
+from . import CoverCoordinator, CoverData
+from .const import DOMAIN
+
+_PLACEHOLDER_IMAGE = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z8rQAAAAASUVORK5CYII="
+)
+
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
+    coordinator: CoverCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([MediaCoverArtCamera(coordinator, entry)], update_before_add=False)
+
+
+class MediaCoverArtCamera(CoordinatorEntity[CoverCoordinator], Camera):
+    _attr_has_entity_name = True
+    _attr_name = "Cover Camera"
+    _attr_icon = "mdi:image"
+
+    def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
+        CoordinatorEntity.__init__(self, coordinator)
+        Camera.__init__(self)
+        self._attr_unique_id = f"{entry.entry_id}_cover_camera"
+        self._attr_is_streaming = False
+
+    async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
+        data: CoverData | None = self.coordinator.data
+        if not data or not data.image:
+            return _PLACEHOLDER_IMAGE
+        return data.image
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        data: CoverData | None = self.coordinator.data
+        return {
+            "source_entity_id": self.coordinator.source_entity_id,
+            "track_key": data.track_key if data else None,
+            "artist": data.artist if data else None,
+            "title": data.title if data else None,
+            "album": data.album if data else None,
+            "provider": data.provider if data else None,
+            "artwork_url": data.artwork_url if data else None,
+            "artwork_width": self.coordinator.artwork_width,
+            "artwork_height": self.coordinator.artwork_height,
+            "artwork_size": self.coordinator.artwork_size,
+        }

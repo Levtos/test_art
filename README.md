@@ -10,7 +10,7 @@ Aktuell: Provider = **iTunes Search API** (kein Login nötig).
 - Track-Change-Erkennung: holt neu nur wenn sich `(artist,title,album)` ändert
 - Caching: Das Frontend refetcht nur wenn `image_last_updated` aktualisiert wurde
 - Eigenes Integrations-Icon als SVG (`custom_components/media_cover_art/icon.svg`)
-- Zusätzliche Status-Sensor-Entity als stabiler Fallback (`sensor.*_cover_status`)
+- Zusätzliche Camera-Entity für Picture Cards (`camera.*_cover_camera`)
 - Robustere Titel-Bereinigung (Remix/Edit/Timecode) und Suchreihenfolge `Artist Title` → `Title Artist`
 - Beibehaltung des letzten erfolgreichen Covers bei temporären API-/Metadaten-Ausfällen
 
