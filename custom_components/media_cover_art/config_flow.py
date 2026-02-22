@@ -92,10 +92,7 @@ class MediaCoverArtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return MediaCoverArtOptionsFlow(config_entry)
 
 
-class MediaCoverArtOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
-
+class MediaCoverArtOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
 

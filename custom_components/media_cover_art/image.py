@@ -26,9 +26,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
     _attr_has_entity_name = True
     _attr_name = "Cover"
+    _attr_icon = "mdi:disc"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(coordinator)
+        CoordinatorEntity.__init__(self, coordinator)
+        ImageEntity.__init__(self)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_cover"
         # default; can be overwritten by coordinator data
@@ -49,8 +51,7 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
         if not data or not data.image:
             self._attr_content_type = "image/png"
             return _PLACEHOLDER_IMAGE
-        if data.content_type:
-            self._attr_content_type = data.content_type
+        self._attr_content_type = data.content_type or "image/jpeg"
         return data.image
 
     @property
