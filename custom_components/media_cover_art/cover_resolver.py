@@ -1,31 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 from typing import Iterable
 
-from homeassistant.exceptions import HomeAssistantError
-
 from .const import PROVIDER_ITUNES
 from .itunes import async_itunes_resolve
+from .models import ResolvedCover, TrackQuery
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass(slots=True)
-class TrackQuery:
-    artist: str | None
-    title: str | None
-    album: str | None
-    artwork_size: int
-
-
-@dataclass(slots=True)
-class ResolvedCover:
-    provider: str
-    artwork_url: str | None
-    content_type: str
-    image: bytes
 
 
 async def async_resolve_cover(*, session, query: TrackQuery, providers: Iterable[str]) -> ResolvedCover | None:
