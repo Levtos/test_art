@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Media Cover Art Icon">
+  <rect x="14" y="14" width="100" height="100" rx="14" fill="none" stroke="#4E6CFF" stroke-width="8"/>
+  <circle cx="64" cy="64" r="28" fill="none" stroke="#4E6CFF" stroke-width="8"/>
+  <circle cx="64" cy="64" r="6" fill="#4E6CFF"/>
+  <path d="M30 98 L42 86" stroke="#4E6CFF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M98 98 L86 86" stroke="#4E6CFF" stroke-width="8" stroke-linecap="round"/>
+</svg>

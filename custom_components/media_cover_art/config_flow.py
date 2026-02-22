@@ -5,15 +5,18 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ARTWORK_HEIGHT,
     CONF_ARTWORK_SIZE,
+    CONF_ARTWORK_WIDTH,
     CONF_PROVIDERS,
     CONF_SOURCE_ENTITY_ID,
+    DEFAULT_ARTWORK_HEIGHT,
     DEFAULT_ARTWORK_SIZE,
+    DEFAULT_ARTWORK_WIDTH,
     DEFAULT_PROVIDERS,
     DOMAIN,
     PROVIDER_ITUNES,
@@ -38,7 +41,14 @@ def _data_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
                     mode=selector.SelectSelectorMode.DROPDOWN,
                 )
             ),
-            vol.Optional(CONF_ARTWORK_SIZE, default=defaults.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE)): vol.Coerce(int),
+            vol.Optional(
+                CONF_ARTWORK_WIDTH,
+                default=defaults.get(CONF_ARTWORK_WIDTH, defaults.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH)),
+            ): vol.Coerce(int),
+            vol.Optional(
+                CONF_ARTWORK_HEIGHT,
+                default=defaults.get(CONF_ARTWORK_HEIGHT, defaults.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT)),
+            ): vol.Coerce(int),
         }
     )
 
@@ -66,7 +76,8 @@ class MediaCoverArtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data = {
                 CONF_SOURCE_ENTITY_ID: source_entity_id,
                 CONF_PROVIDERS: user_input.get(CONF_PROVIDERS, DEFAULT_PROVIDERS),
-                CONF_ARTWORK_SIZE: int(user_input.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE)),
+                CONF_ARTWORK_WIDTH: int(user_input.get(CONF_ARTWORK_WIDTH, user_input.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH))),
+                CONF_ARTWORK_HEIGHT: int(user_input.get(CONF_ARTWORK_HEIGHT, user_input.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT))),
             }
             return self.async_create_entry(title=title, data=data)
 
@@ -81,10 +92,7 @@ class MediaCoverArtConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return MediaCoverArtOptionsFlow(config_entry)
 
 
-class MediaCoverArtOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
-        self.config_entry = config_entry
-
+class MediaCoverArtOptionsFlow(config_entries.OptionsFlowWithConfigEntry):
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         errors: dict[str, str] = {}
 
@@ -93,8 +101,18 @@ class MediaCoverArtOptionsFlow(config_entries.OptionsFlow):
 
         defaults = {
             CONF_SOURCE_ENTITY_ID: self.config_entry.data.get(CONF_SOURCE_ENTITY_ID),
-            CONF_PROVIDERS: self.config_entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS),
-            CONF_ARTWORK_SIZE: self.config_entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE),
+            CONF_PROVIDERS: self.config_entry.options.get(
+                CONF_PROVIDERS,
+                self.config_entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS),
+            ),
+            CONF_ARTWORK_WIDTH: self.config_entry.options.get(
+                CONF_ARTWORK_WIDTH,
+                self.config_entry.data.get(CONF_ARTWORK_WIDTH, self.config_entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH)),
+            ),
+            CONF_ARTWORK_HEIGHT: self.config_entry.options.get(
+                CONF_ARTWORK_HEIGHT,
+                self.config_entry.data.get(CONF_ARTWORK_HEIGHT, self.config_entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT)),
+            ),
         }
 
         # Options allow changing providers/size; source entity stays fixed per unique_id
@@ -107,7 +125,8 @@ class MediaCoverArtOptionsFlow(config_entries.OptionsFlow):
                         mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(CONF_ARTWORK_SIZE, default=defaults[CONF_ARTWORK_SIZE]): vol.Coerce(int),
+                vol.Optional(CONF_ARTWORK_WIDTH, default=defaults[CONF_ARTWORK_WIDTH]): vol.Coerce(int),
+                vol.Optional(CONF_ARTWORK_HEIGHT, default=defaults[CONF_ARTWORK_HEIGHT]): vol.Coerce(int),
             }
         )
 
