@@ -1,0 +1,18 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Media Cover Art",
+        "description": "Wähle einen Media Player. Das Cover wird aus media_artist + media_title ermittelt.",
+        "data": {
+          "source_entity_id": "Media Player",
+          "providers": "Cover-Quellen",
+          "artwork_size": "Cover-Größe (px)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Für diesen Media Player ist bereits ein Eintrag vorhanden."
+    }
+  }
+}
