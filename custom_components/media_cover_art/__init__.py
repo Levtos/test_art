@@ -15,10 +15,14 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ARTWORK_HEIGHT,
     CONF_ARTWORK_SIZE,
+    CONF_ARTWORK_WIDTH,
     CONF_PROVIDERS,
     CONF_SOURCE_ENTITY_ID,
+    DEFAULT_ARTWORK_HEIGHT,
     DEFAULT_ARTWORK_SIZE,
+    DEFAULT_ARTWORK_WIDTH,
     DEFAULT_PROVIDERS,
     DOMAIN,
     PLATFORMS,
@@ -64,6 +68,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self.source_entity_id: str = entry.data[CONF_SOURCE_ENTITY_ID]
         self.providers: list[str] = []
         self.artwork_size: int = DEFAULT_ARTWORK_SIZE
+        self.artwork_width: int = DEFAULT_ARTWORK_WIDTH
+        self.artwork_height: int = DEFAULT_ARTWORK_HEIGHT
 
         self._session = aiohttp_client.async_get_clientsession(hass)
         self._unsub_state_change: Any | None = None
@@ -88,8 +94,18 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         providers = entry.options.get(CONF_PROVIDERS, entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS))
         self.providers = list(providers) if isinstance(providers, list) else list(DEFAULT_PROVIDERS)
 
-        artwork_size = entry.options.get(CONF_ARTWORK_SIZE, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE))
-        self.artwork_size = int(artwork_size)
+        artwork_width = entry.options.get(
+            CONF_ARTWORK_WIDTH,
+            entry.data.get(CONF_ARTWORK_WIDTH, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH)),
+        )
+        artwork_height = entry.options.get(
+            CONF_ARTWORK_HEIGHT,
+            entry.data.get(CONF_ARTWORK_HEIGHT, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT)),
+        )
+
+        self.artwork_width = int(artwork_width)
+        self.artwork_height = int(artwork_height)
+        self.artwork_size = max(self.artwork_width, self.artwork_height)
 
 
     async def async_start(self) -> None:
@@ -181,7 +197,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                     artist=artist,
                     title=title,
                     album=album,
-                    artwork_size=self.artwork_size,
+                    artwork_width=self.artwork_width,
+                    artwork_height=self.artwork_height,
                 )
                 resolved = await async_resolve_cover(
                     session=self._session,

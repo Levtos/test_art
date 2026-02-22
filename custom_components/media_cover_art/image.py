@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 from typing import Any
 
 from homeassistant.components.image import ImageEntity
@@ -9,6 +10,12 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
+
+
+# 1x1 transparent PNG placeholder to keep entity available even when no cover is found.
+_PLACEHOLDER_IMAGE = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z8rQAAAAASUVORK5CYII="
+)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
@@ -39,8 +46,9 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
 
     async def async_image(self) -> bytes | None:
         data: CoverData | None = self.coordinator.data
-        if not data:
-            return None
+        if not data or not data.image:
+            self._attr_content_type = "image/png"
+            return _PLACEHOLDER_IMAGE
         if data.content_type:
             self._attr_content_type = data.content_type
         return data.image
@@ -62,5 +70,7 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
             "album": data.album,
             "provider": data.provider,
             "artwork_url": data.artwork_url,
+            "artwork_width": self.coordinator.artwork_width,
+            "artwork_height": self.coordinator.artwork_height,
             "artwork_size": self.coordinator.artwork_size,
         }

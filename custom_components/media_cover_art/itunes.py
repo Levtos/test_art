@@ -113,7 +113,9 @@ async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover |
     if not isinstance(artwork, str) or not artwork:
         return None
 
-    artwork_url = _upscale_artwork(artwork, max(100, int(query.artwork_size)))
+    # iTunes liefert quadratische Cover; wir verwenden die größere Kante aus Breite/Höhe.
+    target_size = max(100, int(max(query.artwork_width, query.artwork_height)))
+    artwork_url = _upscale_artwork(artwork, target_size)
 
     # Fetch the image bytes
     try:

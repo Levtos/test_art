@@ -8,7 +8,8 @@ class TrackQuery:
     artist: str | None
     title: str | None
     album: str | None
-    artwork_size: int
+    artwork_width: int
+    artwork_height: int
 
 
 @dataclass(slots=True)
