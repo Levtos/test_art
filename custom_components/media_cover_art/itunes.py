@@ -31,7 +31,6 @@ def _score_result(query: TrackQuery, item: dict[str, Any]) -> int:
     r_album = _clean(str(item.get("collectionName", "")))
 
     score = 0
-
     if q_title and r_title:
         if q_title == r_title:
             score += 16
