@@ -43,6 +43,17 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 - Radio streams with very generic metadata can still produce wrong matches.
 - More providers can be added over time.
 
+
+## Troubleshooting
+- If you see startup errors related to `ImageEntity.__init__`/`Camera.__init__`, update to the latest release and fully restart Home Assistant.
+- For debugging, watch these logs first:
+  - `custom_components.media_cover_art`
+  - `homeassistant.components.image`
+  - `homeassistant.components.camera`
+- Typical generated entities (based on selected source `media_player.homepods`):
+  - `image.cover_homepods`
+  - `camera.cover_homepods`
+
 ## Development
 - Domain: `media_cover_art`
 - Platforms: `image`, `camera`
