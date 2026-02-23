@@ -20,6 +20,16 @@ def _source_name(source_entity_id: str) -> str:
     return object_id.replace("_", " ").title()
 
 
+_PLACEHOLDER_IMAGE = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z8rQAAAAASUVORK5CYII="
+)
+
+
+def _source_name(source_entity_id: str) -> str:
+    object_id = source_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").title()
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     coordinator: CoverCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([MediaCoverArtImage(coordinator, entry)], update_before_add=False)
