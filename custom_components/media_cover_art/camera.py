@@ -16,6 +16,11 @@ _PLACEHOLDER_IMAGE = base64.b64decode(
 )
 
 
+def _source_name(source_entity_id: str) -> str:
+    object_id = source_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").title()
+
+
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     coordinator: CoverCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([MediaCoverArtCamera(coordinator, entry)], update_before_add=False)
@@ -23,13 +28,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 class MediaCoverArtCamera(CoordinatorEntity[CoverCoordinator], Camera):
     _attr_has_entity_name = True
-    _attr_name = "Cover Camera"
     _attr_icon = "mdi:image"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
         CoordinatorEntity.__init__(self, coordinator)
         Camera.__init__(self)
         self._attr_unique_id = f"{entry.entry_id}_cover_camera"
+        self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
         self._attr_is_streaming = False
 
     async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:

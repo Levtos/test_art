@@ -12,10 +12,14 @@ from . import CoverCoordinator, CoverData
 from .const import DOMAIN
 
 
-# 1x1 transparent PNG placeholder to keep entity available even when no cover is found.
 _PLACEHOLDER_IMAGE = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z8rQAAAAASUVORK5CYII="
 )
+
+
+def _source_name(source_entity_id: str) -> str:
+    object_id = source_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").title()
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
@@ -25,7 +29,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
     _attr_has_entity_name = True
-    _attr_name = "Cover"
     _attr_icon = "mdi:disc"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
@@ -33,7 +36,7 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
         ImageEntity.__init__(self)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_cover"
-        # default; can be overwritten by coordinator data
+        self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
         self._attr_content_type = "image/jpeg"
 
     @property

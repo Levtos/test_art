@@ -14,10 +14,10 @@ _RE_ARTWORK_SIZE = re.compile(r"/(\d{2,4})x(\d{2,4})bb\.(jpg|png)$", re.IGNORECA
 
 def _clean(s: str) -> str:
     s = s.strip().lower()
+    s = re.sub(r"\((feat\.|featuring|remix|edit|mix).*?\)", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"\[(feat\.|featuring|remix|edit|mix).*?\]", "", s, flags=re.IGNORECASE)
+    s = re.sub(r"[^a-z0-9]+", " ", s)
     s = re.sub(r"\s+", " ", s)
-    s = re.sub(r"\((feat\.|featuring).*?\)", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"\[(feat\.|featuring).*?\]", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"\s{2,}", " ", s)
     return s.strip()
 
 
@@ -33,21 +33,28 @@ def _score_result(query: TrackQuery, item: dict[str, Any]) -> int:
     score = 0
     if q_title and r_title:
         if q_title == r_title:
-            score += 10
+            score += 16
         elif q_title in r_title or r_title in q_title:
-            score += 6
+            score += 7
+        else:
+            score -= 8
 
     if q_artist and r_artist:
         if q_artist == r_artist:
-            score += 8
+            score += 14
         elif q_artist in r_artist or r_artist in q_artist:
-            score += 4
+            score += 5
+        else:
+            score -= 6
 
     if q_album and r_album:
         if q_album == r_album:
-            score += 3
+            score += 6
         elif q_album in r_album or r_album in q_album:
-            score += 1
+            score += 3
+
+    if "single" in r_album:
+        score += 3
 
     if str(item.get("wrapperType", "")).lower() == "track":
         score += 1
@@ -68,7 +75,7 @@ async def _search_itunes(session, term: str) -> list[dict[str, Any]]:
         "term": term,
         "entity": "song",
         "media": "music",
-        "limit": "10",
+        "limit": "15",
     }
     async with session.get(ITUNES_SEARCH_URL, params=params, timeout=10) as resp:
         resp.raise_for_status()
@@ -83,18 +90,26 @@ async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover |
     if not (query.artist or query.title):
         return None
 
-    terms = []
+    terms: list[str] = []
     term1 = " ".join([p for p in [_clean(query.artist or ""), _clean(query.title or "")] if p])
     if term1:
         terms.append(term1)
     term2 = " ".join([p for p in [_clean(query.title or ""), _clean(query.artist or "")] if p])
     if term2 and term2 != term1:
         terms.append(term2)
+    if query.title:
+        terms.append(f"{_clean(query.artist or '')} {_clean(query.title or '')} single".strip())
 
     try:
         results: list[dict[str, Any]] = []
+        seen_ids: set[str] = set()
         for term in terms:
-            results.extend(await _search_itunes(session, term))
+            for item in await _search_itunes(session, term):
+                item_id = str(item.get("trackId") or item.get("collectionId") or id(item))
+                if item_id in seen_ids:
+                    continue
+                seen_ids.add(item_id)
+                results.append(item)
     except Exception as err:
         raise HomeAssistantError(f"iTunes search failed: {err}") from err
 
@@ -102,14 +117,15 @@ async def async_itunes_resolve(*, session, query: TrackQuery) -> ResolvedCover |
         return None
 
     best: dict[str, Any] | None = None
-    best_score = -1
+    best_score = -999
     for item in results:
         score = _score_result(query, item)
         if score > best_score:
             best_score = score
             best = item
 
-    if not best or best_score <= 0:
+    minimum_score = 10 if query.title else 4
+    if not best or best_score < minimum_score:
         return None
 
     artwork = best.get("artworkUrl100") or best.get("artworkUrl60") or best.get("artworkUrl30")
