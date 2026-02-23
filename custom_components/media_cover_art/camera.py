@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import base64
 from typing import Any
 
 from homeassistant.components.camera import Camera
@@ -11,7 +11,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
 
-_FALLBACK_SVG = (Path(__file__).parent / "no_cover.svg").read_bytes()
+_FALLBACK_IMAGE = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABQUlEQVR42u3cMRGAMAAEwVeSGglowAqKcBY3QQAVM+l+izPAb8NAkvN6lnqLhwCABwGAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAO1vz/h0ApcM3QYjhuyHE+N0IYvhuCDF+N4IYvxsBAAAYvxlBjN+NAAAAjN+MAAAAjN+MAAAAAAAAAADaABxjfAIAAAAAAAAAAAAAwFsAAAAAAAAAAAAAga+BAAAAgT+CAAAAAn8FQ+BcAAAAQOBsoNPBALgfAAA3hADgjiAA3BIGgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQNt6Adpn9COM5b1AAAAAAElFTkSuQmCC"
+)
 
 
 def _source_name(source_entity_id: str) -> str:
@@ -41,13 +43,13 @@ class MediaCoverArtCamera(CoordinatorEntity[CoverCoordinator], Camera):
         self._attr_unique_id = f"{entry.entry_id}_cover_camera"
         self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
         self._attr_is_streaming = False
-        self.content_type = "image/svg+xml"
+        self.content_type = "image/png"
 
     async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
         data: CoverData | None = self.coordinator.data
         if not data or not data.image:
-            self.content_type = "image/svg+xml"
-            return _FALLBACK_SVG
+            self.content_type = "image/png"
+            return _FALLBACK_IMAGE
         self.content_type = data.content_type or "image/jpeg"
         return data.image
 

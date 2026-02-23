@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+import base64
 from typing import Any
 
 
@@ -12,7 +12,9 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
 
-_FALLBACK_SVG = (Path(__file__).parent / "no_cover.svg").read_bytes()
+_FALLBACK_IMAGE = base64.b64decode(
+    "iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAAABQUlEQVR42u3cMRGAMAAEwVeSGglowAqKcBY3QQAVM+l+izPAb8NAkvN6lnqLhwCABwGAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAO1vz/h0ApcM3QYjhuyHE+N0IYvhuCDF+N4IYvxsBAAAYvxlBjN+NAAAAjN+MAAAAjN+MAAAAAAAAAADaABxjfAIAAAAAAAAAAAAAwFsAAAAAAAAAAAAAga+BAAAAgT+CAAAAAn8FQ+BcAAAAQOBsoNPBALgfAAA3hADgjiAA3BIGgAAQAAJAAAgAASAABIAAEAACQAAIAAEgAASAABAAAkAACAABIAAEgAAQAAJAAAgAASAABIAAEAACQNt6Adpn9COM5b1AAAAAAElFTkSuQmCC"
+)
 
 
 def _source_name(source_entity_id: str) -> str:
@@ -51,8 +53,8 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
     async def async_image(self) -> bytes | None:
         data: CoverData | None = self.coordinator.data
         if not data or not data.image:
-            self._attr_content_type = "image/svg+xml"
-            return _FALLBACK_SVG
+            self._attr_content_type = "image/png"
+            return _FALLBACK_IMAGE
         self._attr_content_type = data.content_type or "image/jpeg"
         return data.image
 
