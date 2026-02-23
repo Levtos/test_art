@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import base64
+from pathlib import Path
 from typing import Any
+
 
 from homeassistant.components.image import ImageEntity
 from homeassistant.config_entries import ConfigEntry
@@ -10,6 +11,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
+
+_FALLBACK_SVG = (Path(__file__).parent / "no_cover.svg").read_bytes()
+
+
+def _source_name(source_entity_id: str) -> str:
+    object_id = source_entity_id.split(".", 1)[-1]
+    return object_id.replace("_", " ").title()
 
 
 _PLACEHOLDER_IMAGE = base64.b64decode(
@@ -33,7 +41,13 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
         CoordinatorEntity.__init__(self, coordinator)
-        ImageEntity.__init__(self)
+        try:
+            ImageEntity.__init__(self, coordinator.hass)
+        except TypeError:
+            try:
+                ImageEntity.__init__(self, hass=coordinator.hass)
+            except TypeError:
+                ImageEntity.__init__(self)
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_cover"
         self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
@@ -47,8 +61,8 @@ class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
     async def async_image(self) -> bytes | None:
         data: CoverData | None = self.coordinator.data
         if not data or not data.image:
-            self._attr_content_type = "image/png"
-            return _PLACEHOLDER_IMAGE
+            self._attr_content_type = "image/svg+xml"
+            return _FALLBACK_SVG
         self._attr_content_type = data.content_type or "image/jpeg"
         return data.image
 

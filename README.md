@@ -1,49 +1,48 @@
 # Media Cover Art (Home Assistant Custom Integration)
 
-Diese Integration stellt ein Cover-Artwork als **Image-Entity** bereit, basierend auf `media_artist` + `media_title` eines ausgewählten `media_player`.
+This integration provides cover artwork as an **Image entity**, based on `media_artist` + `media_title` from a selected `media_player`.
 
-Aktuell: Provider = **iTunes Search API** (kein Login nötig).
+Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no login required).
 
 ## Features
 
-- Image-Entity (z. B. `image.media_cover_art_homepods_cover`)
-- Track-Change-Erkennung: holt neu nur wenn sich `(artist,title,album)` ändert
-- Caching: Das Frontend refetcht nur wenn `image_last_updated` aktualisiert wurde
-- Eigenes Integrations-Icon als SVG (`custom_components/media_cover_art/icon.svg`)
-- Zusätzliche Camera-Entity für Picture Cards (`camera.*_cover_camera`)
-- Robustere Titel-Bereinigung (Remix/Edit/Timecode) und Suchreihenfolge `Artist Title` → `Title Artist`
-- Beibehaltung des letzten erfolgreichen Covers bei temporären API-/Metadaten-Ausfällen
+- Image entity (for example: `image.media_cover_art_homepods_cover`)
+- Track change detection: refreshes only when `(artist,title,album)` changes
+- Frontend-friendly caching: UI refetches when `image_last_updated` changes
+- Integration icon/logo assets (SVG)
+- Additional Camera entity for Picture Cards (`camera.*_cover_camera`)
+- More robust metadata cleanup (Remix/Edit/Timecode) and query order `Artist Title` → `Title Artist`
+- Keeps last successful cover during temporary API/metadata failures
+- Visible no-cover SVG fallback (`no_cover.svg`) instead of a transparent pixel
 
 ## Installation
 
 ### Option A: HACS (Custom Repository)
-1. GitHub Repo erstellen und diese Dateien 1:1 reinpacken
+1. Create a GitHub repository and copy these files as-is
 2. In Home Assistant:
    - HACS → (⋮) → *Custom repositories*
-   - Repo-URL eintragen
+   - Enter repository URL
    - Type: **Integration**
-   - Installieren
-3. Home Assistant neu starten
+   - Install
+3. Restart Home Assistant
 
-(HACS Custom Repository Schritte siehe Doku.) 
+### Option B: Manual
+1. Copy folder `custom_components/media_cover_art/` to `<config>/custom_components/media_cover_art/`
+2. Restart Home Assistant
 
-### Option B: Manuell
-1. Ordner `custom_components/media_cover_art/` nach `<config>/custom_components/media_cover_art/` kopieren
-2. Home Assistant neu starten
+## Setup
+- Settings → Devices & Services → Add Integration → **Media Cover Art**
+- Select your `media_player` (for example HomePods)
 
-## Einrichtung
-- Einstellungen → Geräte & Dienste → Integration hinzufügen → **Media Cover Art**
-- Wähle deinen `media_player` (z. B. HomePods)
-
-## Lovelace Nutzung
-- Eine Picture Card mit Entity:
+## Lovelace usage
+- Use a Picture card with entity:
   - `type: picture-entity`
   - `entity: image.media_cover_art_homepods_cover`
 
-## Hinweise / Grenzen
-- Radiosender/Streams mit sehr generischen Titeln können “falsche” Treffer liefern (z. B. nur “For Real”).
-- Später können weitere Provider ergänzt werden (Spotify/MusicBrainz).
+## Notes / limitations
+- Radio streams with very generic metadata can still produce wrong matches.
+- More providers can be added over time.
 
-## Entwicklung
+## Development
 - Domain: `media_cover_art`
-- Platform: `image`
+- Platforms: `image`, `camera`

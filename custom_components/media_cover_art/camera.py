@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import base64
+from pathlib import Path
 from typing import Any
 
 from homeassistant.components.camera import Camera
@@ -11,9 +11,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
 
-_PLACEHOLDER_IMAGE = base64.b64decode(
-    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO7Z8rQAAAAASUVORK5CYII="
-)
+_FALLBACK_SVG = (Path(__file__).parent / "no_cover.svg").read_bytes()
 
 
 def _source_name(source_entity_id: str) -> str:
@@ -32,15 +30,25 @@ class MediaCoverArtCamera(CoordinatorEntity[CoverCoordinator], Camera):
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
         CoordinatorEntity.__init__(self, coordinator)
-        Camera.__init__(self)
+        try:
+            Camera.__init__(self)
+        except TypeError:
+            # Compatibility guard for potential signature differences across HA versions.
+            try:
+                Camera.__init__(self, coordinator.hass)
+            except TypeError:
+                Camera.__init__(self, hass=coordinator.hass)
         self._attr_unique_id = f"{entry.entry_id}_cover_camera"
         self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
         self._attr_is_streaming = False
+        self.content_type = "image/svg+xml"
 
     async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
         data: CoverData | None = self.coordinator.data
         if not data or not data.image:
-            return _PLACEHOLDER_IMAGE
+            self.content_type = "image/svg+xml"
+            return _FALLBACK_SVG
+        self.content_type = data.content_type or "image/jpeg"
         return data.image
 
     @property

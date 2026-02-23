@@ -20,10 +20,12 @@ from .const import (
     DEFAULT_PROVIDERS,
     DOMAIN,
     PROVIDER_ITUNES,
+    PROVIDER_MUSICBRAINZ,
 )
 
 PROVIDER_OPTIONS = [
     {"value": PROVIDER_ITUNES, "label": "iTunes (Apple Search API)"},
+    {"value": PROVIDER_MUSICBRAINZ, "label": "MusicBrainz + Cover Art Archive"},
 ]
 
 
