@@ -1,31 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import logging
 from typing import Iterable
 
-from homeassistant.exceptions import HomeAssistantError
-
-from .const import PROVIDER_ITUNES
+from .const import PROVIDER_ITUNES, PROVIDER_MUSICBRAINZ
 from .itunes import async_itunes_resolve
+from .models import ResolvedCover, TrackQuery
+from .musicbrainz import async_musicbrainz_resolve
 
 _LOGGER = logging.getLogger(__name__)
-
-
-@dataclass(slots=True)
-class TrackQuery:
-    artist: str | None
-    title: str | None
-    album: str | None
-    artwork_size: int
-
-
-@dataclass(slots=True)
-class ResolvedCover:
-    provider: str
-    artwork_url: str | None
-    content_type: str
-    image: bytes
 
 
 async def async_resolve_cover(*, session, query: TrackQuery, providers: Iterable[str]) -> ResolvedCover | None:
@@ -44,14 +27,19 @@ async def async_resolve_cover(*, session, query: TrackQuery, providers: Iterable
                     return resolved
                 continue
 
+            if provider == PROVIDER_MUSICBRAINZ:
+                resolved = await async_musicbrainz_resolve(session=session, query=query)
+                if resolved:
+                    return resolved
+                continue
+
             _LOGGER.debug("Unknown provider '%s' (skipping)", provider)
 
-        except Exception as err:
+        except Exception as err:  # noqa: BLE001
             last_err = err
             _LOGGER.debug("Provider '%s' failed: %s", provider, err)
 
     if last_err:
-        # Only raise if you want errors to surface; for covers we keep it soft.
         _LOGGER.debug("All providers failed, last error: %s", last_err)
 
     return None

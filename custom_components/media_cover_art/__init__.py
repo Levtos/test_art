@@ -4,28 +4,47 @@ import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 import logging
+import re
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
-from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import aiohttp_client
 from homeassistant.helpers.event import async_track_state_change_event
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_ARTWORK_HEIGHT,
     CONF_ARTWORK_SIZE,
+    CONF_ARTWORK_WIDTH,
     CONF_PROVIDERS,
     CONF_SOURCE_ENTITY_ID,
+    DEFAULT_ARTWORK_HEIGHT,
     DEFAULT_ARTWORK_SIZE,
+    DEFAULT_ARTWORK_WIDTH,
     DEFAULT_PROVIDERS,
     DOMAIN,
     PLATFORMS,
 )
-from .cover_resolver import async_resolve_cover, TrackQuery
+from .cover_resolver import async_resolve_cover
+from .models import TrackQuery
 
 _LOGGER = logging.getLogger(__name__)
+
+_RE_CLEAN = re.compile(
+    r"""
+       \s*
+       (
+           \([^)]*(?:Remix|Edit|Mix)[^)]*\) |
+           \[[^\]]*(?:Remix|Edit|Mix)[^\]]*\] |
+           -\s*.*(?:Remix|Edit|Mix).* |
+           \(?\s*\d+[_:]\d+\s*\)?
+       )
+    """,
+    re.I | re.X,
+)
+_BAD = {"", "none", "null", "unknown", "n/a", "-"}
 
 
 @dataclass(slots=True)
@@ -40,6 +59,15 @@ class CoverData:
     content_type: str
     image: bytes | None
     last_updated: datetime | None
+
+
+def _clean_text(value: str | None) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = re.sub(r"\s{2,}", " ", _RE_CLEAN.sub("", value)).strip()
+    if cleaned.lower() in _BAD:
+        return None
+    return cleaned or None
 
 
 def _norm(s: str) -> str:
@@ -61,17 +89,23 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         self.entry = entry
         self.source_entity_id: str = entry.data[CONF_SOURCE_ENTITY_ID]
-        self.providers: list[str] = list(entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS))
-        self.artwork_size: int = int(entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_SIZE))
+        self.providers: list[str] = []
+        self.artwork_size: int = DEFAULT_ARTWORK_SIZE
+        self.artwork_width: int = DEFAULT_ARTWORK_WIDTH
+        self.artwork_height: int = DEFAULT_ARTWORK_HEIGHT
 
         self._session = aiohttp_client.async_get_clientsession(hass)
         self._unsub_state_change: Any | None = None
         self._lock = asyncio.Lock()
 
+        self._update_from_entry(entry)
+
         self._artist: str | None = None
         self._title: str | None = None
         self._album: str | None = None
         self._track_key: str | None = None
+        self._last_cover: CoverData | None = None
+        self._last_error: str | None = None
 
         super().__init__(
             hass=hass,
@@ -80,6 +114,23 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             update_method=self._async_update_data,
             update_interval=None,  # event-driven
         )
+
+    def _update_from_entry(self, entry: ConfigEntry) -> None:
+        providers = entry.options.get(CONF_PROVIDERS, entry.data.get(CONF_PROVIDERS, DEFAULT_PROVIDERS))
+        self.providers = list(providers) if isinstance(providers, list) else list(DEFAULT_PROVIDERS)
+
+        artwork_width = entry.options.get(
+            CONF_ARTWORK_WIDTH,
+            entry.data.get(CONF_ARTWORK_WIDTH, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_WIDTH)),
+        )
+        artwork_height = entry.options.get(
+            CONF_ARTWORK_HEIGHT,
+            entry.data.get(CONF_ARTWORK_HEIGHT, entry.data.get(CONF_ARTWORK_SIZE, DEFAULT_ARTWORK_HEIGHT)),
+        )
+
+        self.artwork_width = int(artwork_width)
+        self.artwork_height = int(artwork_height)
+        self.artwork_size = max(self.artwork_width, self.artwork_height)
 
     async def async_start(self) -> None:
         """Start listening to media_player state changes and do initial refresh."""
@@ -92,10 +143,8 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             self._handle_state_change,
         )
 
-        # Initialize from current state (if available)
         state = self.hass.states.get(self.source_entity_id)
         changed = self._set_track_from_state(state)
-        # Even if not changed, try one refresh on start in case there's already data
         if changed or state is not None:
             await self.async_request_refresh()
 
@@ -115,25 +164,18 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         if not changed:
             return
 
-        # schedule refresh (callback context)
         self.hass.async_create_task(self.async_request_refresh())
 
     def _set_track_from_state(self, state: State | None) -> bool:
-        if state is None:
+        if state is None or state.state in {"unavailable", "unknown"}:
             return False
 
         attrs = state.attributes or {}
-        artist = attrs.get("media_artist")
-        title = attrs.get("media_title")
-        album = attrs.get("media_album_name")
-
-        # Normalize empty strings to None
-        artist = artist.strip() if isinstance(artist, str) else None
-        title = title.strip() if isinstance(title, str) else None
-        album = album.strip() if isinstance(album, str) else None
+        artist = _clean_text(attrs.get("media_artist"))
+        title = _clean_text(attrs.get("media_title"))
+        album = _clean_text(attrs.get("media_album_name"))
 
         new_key = _build_track_key(artist, title, album)
-
         if new_key == self._track_key:
             return False
 
@@ -142,6 +184,33 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
         self._album = album
         self._track_key = new_key
         return True
+
+    @property
+    def last_error(self) -> str | None:
+        return self._last_error
+
+    def _fallback_data(
+        self,
+        *,
+        track_key: str | None,
+        artist: str | None,
+        title: str | None,
+        album: str | None,
+    ) -> CoverData:
+        if self._last_cover is not None:
+            return self._last_cover
+        return CoverData(
+            source_entity_id=self.source_entity_id,
+            track_key=track_key,
+            artist=artist,
+            title=title,
+            album=album,
+            provider=None,
+            artwork_url=None,
+            content_type="image/jpeg",
+            image=None,
+            last_updated=None,
+        )
 
     async def _async_update_data(self) -> CoverData:
         """Fetch and cache cover data for current track."""
@@ -152,51 +221,37 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             album = self._album
 
             if not track_key or (not artist and not title):
-                return CoverData(
-                    source_entity_id=self.source_entity_id,
-                    track_key=None,
-                    artist=artist,
-                    title=title,
-                    album=album,
-                    provider=None,
-                    artwork_url=None,
-                    content_type="image/jpeg",
-                    image=None,
-                    last_updated=None,
-                )
+                return self._fallback_data(track_key=None, artist=artist, title=title, album=album)
 
             try:
                 query = TrackQuery(
                     artist=artist,
                     title=title,
                     album=album,
-                    artwork_size=self.artwork_size,
+                    artwork_width=self.artwork_width,
+                    artwork_height=self.artwork_height,
                 )
                 resolved = await async_resolve_cover(
                     session=self._session,
                     query=query,
                     providers=self.providers,
                 )
-            except (asyncio.TimeoutError, HomeAssistantError) as err:
-                raise UpdateFailed(str(err)) from err
-            except Exception as err:
-                raise UpdateFailed(f"Unexpected error: {err}") from err
+            except Exception as err:  # noqa: BLE001
+                self._last_error = str(err)
+                _LOGGER.warning(
+                    "Cover resolution failed for %s (%s - %s): %s",
+                    self.source_entity_id,
+                    artist,
+                    title,
+                    err,
+                )
+                return self._fallback_data(track_key=track_key, artist=artist, title=title, album=album)
 
             if resolved is None:
-                return CoverData(
-                    source_entity_id=self.source_entity_id,
-                    track_key=track_key,
-                    artist=artist,
-                    title=title,
-                    album=album,
-                    provider=None,
-                    artwork_url=None,
-                    content_type="image/jpeg",
-                    image=None,
-                    last_updated=None,
-                )
+                return self._fallback_data(track_key=track_key, artist=artist, title=title, album=album)
 
-            return CoverData(
+            self._last_error = None
+            data = CoverData(
                 source_entity_id=self.source_entity_id,
                 track_key=track_key,
                 artist=artist,
@@ -208,14 +263,21 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                 image=resolved.image,
                 last_updated=dt_util.utcnow(),
             )
+            self._last_cover = data
+            return data
+
+
+async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     coordinator = CoverCoordinator(hass, entry)
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
-    await coordinator.async_start()
+    entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 
+    await coordinator.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
