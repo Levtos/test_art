@@ -3,7 +3,7 @@ from __future__ import annotations
 import base64
 from typing import Any
 
-from homeassistant.components.image import ImageEntity
+from homeassistant.components.camera import Camera
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
@@ -23,57 +23,47 @@ def _source_name(source_entity_id: str) -> str:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
     coordinator: CoverCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([MediaCoverArtImage(coordinator, entry)], update_before_add=False)
+    async_add_entities([MediaCoverArtCamera(coordinator, entry)], update_before_add=False)
 
 
-class MediaCoverArtImage(CoordinatorEntity[CoverCoordinator], ImageEntity):
+class MediaCoverArtCamera(CoordinatorEntity[CoverCoordinator], Camera):
     _attr_has_entity_name = True
-    _attr_icon = "mdi:disc"
+    _attr_icon = "mdi:image"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
         CoordinatorEntity.__init__(self, coordinator)
         try:
-            ImageEntity.__init__(self, coordinator.hass)
+            Camera.__init__(self)
         except TypeError:
+            # Compatibility guard for potential signature differences across HA versions.
             try:
-                ImageEntity.__init__(self, hass=coordinator.hass)
+                Camera.__init__(self, coordinator.hass)
             except TypeError:
-                ImageEntity.__init__(self)
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_cover"
+                Camera.__init__(self, hass=coordinator.hass)
+        self._attr_unique_id = f"{entry.entry_id}_cover_camera"
         self._attr_name = f"Cover {_source_name(coordinator.source_entity_id)}"
-        self._attr_content_type = "image/jpeg"
+        self._attr_is_streaming = False
+        self.content_type = "image/png"
 
-    @property
-    def image_last_updated(self):
-        data: CoverData | None = self.coordinator.data
-        return data.last_updated if data else None
-
-    async def async_image(self) -> bytes | None:
+    async def async_camera_image(self, width: int | None = None, height: int | None = None) -> bytes | None:
         data: CoverData | None = self.coordinator.data
         if not data or not data.image:
-            self._attr_content_type = "image/png"
+            self.content_type = "image/png"
             return _FALLBACK_IMAGE
-        self._attr_content_type = data.content_type or "image/jpeg"
+        self.content_type = data.content_type or "image/jpeg"
         return data.image
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         data: CoverData | None = self.coordinator.data
-        base = {
-            "source_entity_id": self.coordinator.source_entity_id,
-        }
-        if not data:
-            return base
-
         return {
-            **base,
-            "track_key": data.track_key,
-            "artist": data.artist,
-            "title": data.title,
-            "album": data.album,
-            "provider": data.provider,
-            "artwork_url": data.artwork_url,
+            "source_entity_id": self.coordinator.source_entity_id,
+            "track_key": data.track_key if data else None,
+            "artist": data.artist if data else None,
+            "title": data.title if data else None,
+            "album": data.album if data else None,
+            "provider": data.provider if data else None,
+            "artwork_url": data.artwork_url if data else None,
             "artwork_width": self.coordinator.artwork_width,
             "artwork_height": self.coordinator.artwork_height,
             "artwork_size": self.coordinator.artwork_size,
