@@ -1,10 +1,12 @@
 {
   "domain": "media_cover_art",
   "name": "Media Cover Art",
-  "version": "0.1.1",
-  "documentation": "https://github.com/REPLACE_ME/media-cover-art",
-  "issue_tracker": "https://github.com/REPLACE_ME/media-cover-art/issues",
-  "codeowners": ["@REPLACE_ME"],
+  "version": "0.2.0",
+  "documentation": "https://github.com/Levtos/test_art",
+  "issue_tracker": "https://github.com/Levtos/test_art/issues",
+  "codeowners": [
+    "@Levtos"
+  ],
   "config_flow": true,
   "iot_class": "cloud_polling",
   "dependencies": [],

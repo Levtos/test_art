@@ -7,7 +7,8 @@
         "data": {
           "source_entity_id": "Media player",
           "providers": "Cover sources",
-          "artwork_size": "Artwork size (px)"
+          "artwork_width": "Artwork width (px)",
+          "artwork_height": "Artwork height (px)"
         }
       }
     },
