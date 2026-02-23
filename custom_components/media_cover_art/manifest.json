@@ -1,10 +1,12 @@
 {
   "domain": "media_cover_art",
   "name": "Media Cover Art",
-  "version": "0.1.1",
+  "version": "0.1.22",
   "documentation": "https://github.com/REPLACE_ME/media-cover-art",
   "issue_tracker": "https://github.com/REPLACE_ME/media-cover-art/issues",
-  "codeowners": ["@REPLACE_ME"],
+  "codeowners": [
+    "@REPLACE_ME"
+  ],
   "config_flow": true,
   "iot_class": "cloud_polling",
   "dependencies": [],
