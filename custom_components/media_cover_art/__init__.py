@@ -61,6 +61,16 @@ class CoverData:
     last_updated: datetime | None
 
 
+def _raw_text(value: str | None) -> str | None:
+    """Normalize whitespace only – keeps remix/edit/mix annotations intact."""
+    if not isinstance(value, str):
+        return None
+    normalized = re.sub(r"\s{2,}", " ", value).strip()
+    if normalized.lower() in _BAD:
+        return None
+    return normalized or None
+
+
 def _clean_text(value: str | None) -> str | None:
     if not isinstance(value, str):
         return None
@@ -102,6 +112,7 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
 
         self._artist: str | None = None
         self._title: str | None = None
+        self._raw_title: str | None = None
         self._album: str | None = None
         self._track_key: str | None = None
         self._last_cover: CoverData | None = None
@@ -171,16 +182,20 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
             return False
 
         attrs = state.attributes or {}
+        raw_title = _raw_text(attrs.get("media_title"))
         artist = _clean_text(attrs.get("media_artist"))
         title = _clean_text(attrs.get("media_title"))
         album = _clean_text(attrs.get("media_album_name"))
 
-        new_key = _build_track_key(artist, title, album)
+        # Use raw title in the key so "Song (Remix)" and "Song" are treated as
+        # distinct tracks and each triggers its own cover fetch.
+        new_key = _build_track_key(artist, raw_title, album)
         if new_key == self._track_key:
             return False
 
         self._artist = artist
         self._title = title
+        self._raw_title = raw_title
         self._album = album
         self._track_key = new_key
         return True
@@ -224,12 +239,16 @@ class CoverCoordinator(DataUpdateCoordinator[CoverData]):
                 return self._fallback_data(track_key=None, artist=artist, title=title, album=album)
 
             try:
+                raw_title = self._raw_title
                 query = TrackQuery(
                     artist=artist,
                     title=title,
                     album=album,
                     artwork_width=self.artwork_width,
                     artwork_height=self.artwork_height,
+                    # Pass raw title so the resolver can try it first (e.g. "Song (Remix)")
+                    # before falling back to the cleaned title ("Song").
+                    original_title=raw_title if raw_title != title else None,
                 )
                 resolved = await async_resolve_cover(
                     session=self._session,

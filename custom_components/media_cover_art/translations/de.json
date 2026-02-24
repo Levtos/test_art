@@ -3,17 +3,17 @@
     "step": {
       "user": {
         "title": "Media Cover Art",
-        "description": "Select a media player. Cover art will be resolved from media_artist + media_title.",
+        "description": "Wähle einen Media Player aus. Cover Art wird anhand von media_artist + media_title ermittelt.",
         "data": {
-          "source_entity_id": "Media player",
-          "providers": "Cover sources",
-          "artwork_width": "Artwork width (px)",
-          "artwork_height": "Artwork height (px)"
+          "source_entity_id": "Media Player",
+          "providers": "Cover-Quellen",
+          "artwork_width": "Artwork-Breite (px)",
+          "artwork_height": "Artwork-Höhe (px)"
         }
       }
     },
     "abort": {
-      "already_configured": "This media player is already configured."
+      "already_configured": "Dieser Media Player ist bereits konfiguriert."
     }
   }
 }

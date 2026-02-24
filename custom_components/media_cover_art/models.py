@@ -10,6 +10,7 @@ class TrackQuery:
     album: str | None
     artwork_width: int
     artwork_height: int
+    original_title: str | None = None  # raw title before remix/edit stripping
 
 
 @dataclass(slots=True)

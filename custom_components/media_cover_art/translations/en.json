@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Media Cover Art",
+        "description": "Select a media player. Cover art will be resolved from media_artist + media_title.",
+        "data": {
+          "source_entity_id": "Media player",
+          "providers": "Cover sources",
+          "artwork_width": "Artwork width (px)",
+          "artwork_height": "Artwork height (px)"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This media player is already configured."
+    }
+  }
+}
