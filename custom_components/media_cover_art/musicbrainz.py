@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from homeassistant.exceptions import HomeAssistantError
 
 from .models import ResolvedCover, TrackQuery
+
+_LOGGER = logging.getLogger(__name__)
 
 MB_SEARCH_URL = "https://musicbrainz.org/ws/2/recording"
 CAA_FRONT_URL = "https://coverartarchive.org/release/{release_id}/front-500"
@@ -30,7 +33,7 @@ async def async_musicbrainz_resolve(*, session, query: TrackQuery) -> ResolvedCo
 
     headers = {
         # MusicBrainz asks for a descriptive User-Agent
-        "User-Agent": "media-cover-art-ha/0.1 (+https://github.com/Levtos/test_art)",
+        "User-Agent": "media-cover-art-ha/0.2.2 (+https://github.com/Levtos/test_art)",
     }
 
     try:
@@ -72,7 +75,8 @@ async def async_musicbrainz_resolve(*, session, query: TrackQuery) -> ResolvedCo
                 return None
             content_type = img_resp.headers.get("Content-Type", "image/jpeg")
             image = await img_resp.read()
-    except Exception:
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("MusicBrainz artwork fetch failed for %s: %s", artwork_url, err)
         return None
 
     if not image:

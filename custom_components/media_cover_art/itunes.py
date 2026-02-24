@@ -11,13 +11,19 @@ ITUNES_SEARCH_URL = "https://itunes.apple.com/search"
 _JSON_KW = {"content_type": None}
 _RE_ARTWORK_SIZE = re.compile(r"/(\d{2,4})x(\d{2,4})bb\.(jpg|png)$", re.IGNORECASE)
 
+# Pre-compiled patterns for _clean() – avoids recompilation on every call.
+_RE_PAREN_FEAT = re.compile(r"\((feat\.|featuring|remix|edit|mix).*?\)", re.IGNORECASE)
+_RE_BRACKET_FEAT = re.compile(r"\[(feat\.|featuring|remix|edit|mix).*?\]", re.IGNORECASE)
+_RE_NON_ALNUM = re.compile(r"[^a-z0-9]+")
+_RE_SPACES = re.compile(r"\s+")
+
 
 def _clean(s: str) -> str:
     s = s.strip().lower()
-    s = re.sub(r"\((feat\.|featuring|remix|edit|mix).*?\)", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"\[(feat\.|featuring|remix|edit|mix).*?\]", "", s, flags=re.IGNORECASE)
-    s = re.sub(r"[^a-z0-9]+", " ", s)
-    s = re.sub(r"\s+", " ", s)
+    s = _RE_PAREN_FEAT.sub("", s)
+    s = _RE_BRACKET_FEAT.sub("", s)
+    s = _RE_NON_ALNUM.sub(" ", s)
+    s = _RE_SPACES.sub(" ", s)
     return s.strip()
 
 
