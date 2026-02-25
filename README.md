@@ -1,4 +1,4 @@
-# Cover Art Wrapper (Home Assistant Custom Integration)
+# Media Art Wrapper (Home Assistant Custom Integration)
 
 This integration provides cover artwork based on `media_artist` + `media_title` from a selected `media_player`, exposed as **Image**, **Camera**, and an optional **Media Player wrapper** entity.
 
@@ -6,7 +6,7 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 
 ## Features
 
-- Image entity (for example: `image.media_cover_art_homepods_cover`)
+- Image entity (for example: `image.media_art_wrapper_homepods_cover`)
 - Track change detection: refreshes only when `(artist,title,album)` changes
 - Frontend-friendly caching: UI refetches when `image_last_updated` changes
 - Integration icon/logo assets (SVG)
@@ -28,17 +28,17 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 3. Restart Home Assistant
 
 ### Option B: Manual
-1. Copy folder `custom_components/media_cover_art/` to `<config>/custom_components/media_cover_art/`
+1. Copy folder `custom_components/media_art_wrapper/` to `<config>/custom_components/media_art_wrapper/`
 2. Restart Home Assistant
 
 ## Setup
-- Settings → Devices & Services → Add Integration → **Cover Art Wrapper**
+- Settings → Devices & Services → Add Integration → **Media Art Wrapper**
 - Select your `media_player` (for example HomePods)
 
 ## Lovelace usage
 - Use a Picture card with entity:
   - `type: picture-entity`
-  - `entity: image.media_cover_art_homepods_cover`
+  - `entity: image.media_art_wrapper_homepods_cover`
 
 ## Notes / limitations
 - Radio streams with very generic metadata can still produce wrong matches.
@@ -48,7 +48,7 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 ## Troubleshooting
 - If you see startup errors related to `ImageEntity.__init__`/`Camera.__init__`, update to the latest release and fully restart Home Assistant.
 - For debugging, watch these logs first:
-  - `custom_components.media_cover_art`
+  - `custom_components.media_art_wrapper`
   - `homeassistant.components.image`
   - `homeassistant.components.camera`
 - Typical generated entities (based on selected source `media_player.homepods`):
@@ -57,5 +57,5 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
   - `media_player.homepods_cover`
 
 ## Development
-- Domain: `media_cover_art`
+- Domain: `media_art_wrapper`
 - Platforms: `image`, `camera`, `media_player`

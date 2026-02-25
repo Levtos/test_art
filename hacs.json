@@ -1,5 +1,5 @@
 {
-  "name": "Media Cover Art",
+  "name": "Media Art Wrapper",
   "hide_default_branch": true,
   "render_readme": true,
   "homeassistant": "2023.1.0"
