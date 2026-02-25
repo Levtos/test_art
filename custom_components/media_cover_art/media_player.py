@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.media_player import MediaPlayerEntity
+from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerState
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_state_change_event
@@ -30,7 +30,11 @@ class MediaCoverArtUniversalPlayer(CoordinatorEntity[CoverCoordinator], MediaPla
     _attr_icon = "mdi:speaker"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
-        super().__init__(coordinator)
+        CoordinatorEntity.__init__(self, coordinator)
+        try:
+            MediaPlayerEntity.__init__(self)
+        except TypeError:
+            pass
         self._attr_unique_id = f"{entry.entry_id}_cover_player"
         self._attr_name = f"{source_name(coordinator.source_entity_id)} Cover"
         self._unsub_source_state = None
@@ -67,11 +71,14 @@ class MediaCoverArtUniversalPlayer(CoordinatorEntity[CoverCoordinator], MediaPla
         return src is not None and src.state not in {"unavailable", "unknown"}
 
     @property
-    def state(self):
+    def state(self) -> MediaPlayerState | None:
         src = self.source_state
         if src is None:
             return None
-        return src.state
+        try:
+            return MediaPlayerState(src.state)
+        except ValueError:
+            return None
 
     @property
     def supported_features(self) -> int:

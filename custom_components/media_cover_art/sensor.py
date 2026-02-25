@@ -7,6 +7,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import CoverCoordinator, CoverData
 from .const import DOMAIN
+from .helpers import source_name
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities) -> None:
@@ -15,13 +16,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
 
 
 class MediaCoverArtStatusSensor(CoordinatorEntity[CoverCoordinator], SensorEntity):
-    _attr_has_entity_name = True
-    _attr_name = "Cover Status"
+    _attr_has_entity_name = False
     _attr_icon = "mdi:music-circle"
 
     def __init__(self, coordinator: CoverCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._attr_unique_id = f"{entry.entry_id}_cover_status"
+        self._attr_name = f"{source_name(coordinator.source_entity_id)} Cover Status"
 
     @property
     def native_value(self) -> str:

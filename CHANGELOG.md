@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.9 (2026-02-25)
+- `media_player.__init__`: Beide Basisklassen (`CoordinatorEntity`, `MediaPlayerEntity`) jetzt explizit initialisiert – identisches Muster wie `camera.py`/`image.py`, behebt Entitäts-Erstellungsfehler in neueren HA-Versionen
+- `state`-Property gibt jetzt `MediaPlayerState`-Enum zurück statt plain String (Kompatibilität mit HA-Validierung)
+- `sensor.py`: `_attr_has_entity_name = True` entfernt (ohne `device_info` verursacht es in HA 2024.1+ Warnungen/Fehler); Name wird jetzt in `__init__` gesetzt
+
 ## 0.2.8 (2026-02-25)
 - `Platform.SENSOR` zu `PLATFORMS` hinzugefügt – Sensor-Entity wurde nie geladen, da sie fehlte
 - `available`-Property korrigiert: gibt jetzt `False` zurück wenn Quelle den State `unavailable`/`unknown` hat (statt immer `True`)
