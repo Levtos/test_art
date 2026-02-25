@@ -1,0 +1,3 @@
+# Reduce text merge conflicts for append-heavy docs
+CHANGELOG.md merge=union
+README.md merge=union
