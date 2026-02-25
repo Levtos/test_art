@@ -1,6 +1,6 @@
 # Media Cover Art (Home Assistant Custom Integration)
 
-This integration provides cover artwork as an **Image entity**, based on `media_artist` + `media_title` from a selected `media_player`.
+This integration provides cover artwork based on `media_artist` + `media_title` from a selected `media_player`, exposed as **Image**, **Camera**, and an optional **Media Player wrapper** entity.
 
 Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no login required).
 
@@ -11,6 +11,7 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 - Frontend-friendly caching: UI refetches when `image_last_updated` changes
 - Integration icon/logo assets (SVG)
 - Additional Camera entity for Picture Cards (`camera.*_cover_camera`)
+- Additional universal-style Media Player wrapper entity with inherited controls + generated cover image (`media_player.*_cover`)
 - More robust metadata cleanup (Remix/Edit/Timecode) and query order `Artist Title` → `Title Artist`
 - Keeps last successful cover during temporary API/metadata failures
 - Visible no-cover SVG fallback (`no_cover.svg`) instead of a transparent pixel
@@ -53,7 +54,8 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 - Typical generated entities (based on selected source `media_player.homepods`):
   - `image.cover_homepods`
   - `camera.cover_homepods`
+  - `media_player.homepods_cover`
 
 ## Development
 - Domain: `media_cover_art`
-- Platforms: `image`, `camera`
+- Platforms: `image`, `camera`, `media_player`
