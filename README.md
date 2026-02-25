@@ -1,4 +1,4 @@
-# Media Cover Art (Home Assistant Custom Integration)
+# Cover Art Wrapper (Home Assistant Custom Integration)
 
 This integration provides cover artwork based on `media_artist` + `media_title` from a selected `media_player`, exposed as **Image**, **Camera**, and an optional **Media Player wrapper** entity.
 
@@ -32,7 +32,7 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 2. Restart Home Assistant
 
 ## Setup
-- Settings → Devices & Services → Add Integration → **Media Cover Art**
+- Settings → Devices & Services → Add Integration → **Cover Art Wrapper**
 - Select your `media_player` (for example HomePods)
 
 ## Lovelace usage
