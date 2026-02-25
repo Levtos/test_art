@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.4 (2026-02-25)
+- Media-Player-Entity als universeller Wrapper über den gewählten Source-Player stabilisiert
+- Wrapper reagiert jetzt auf *alle* Source-State-Änderungen (nicht nur Track-Wechsel)
+- Source-Attribute werden umfassend gespiegelt, während das Cover weiterhin aus der Integration kommt
+- MusicBrainz User-Agent auf `0.2.4` aktualisiert
+
+## 0.2.3 (2026-02-25)
+- Neue `media_player`-Wrapper-Entity hinzugefügt, die Steuerfunktionen des gewählten Source-Players durchreicht und gleichzeitig das ermittelte Cover als Media-Bild nutzt
+- Wrapper folgt Künstler/Titel-Updates über den bestehenden Coordinator und nutzt denselben Fallback-Mechanismus wie `image`/`camera`
+- Dokumentation um die neue Entity ergänzt
+- MusicBrainz User-Agent auf `0.2.3` aktualisiert
+
 ## 0.2.2 (2026-02-24)
 - Gemeinsamen Code (`FALLBACK_IMAGE`, `source_name`) aus `image.py` und `camera.py` in neue Datei `helpers.py` ausgelagert (Duplikation beseitigt)
 - `itunes.py`: Vier Regex-Muster in `_clean()` auf Modulebene vorkompiliert statt bei jedem Aufruf neu zu kompilieren
