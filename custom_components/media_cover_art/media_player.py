@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerState
+from homeassistant.components.media_player import MediaPlayerEntity, MediaPlayerEntityFeature, MediaPlayerState
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, State, callback
 from homeassistant.helpers.event import async_track_state_change_event
@@ -81,14 +81,14 @@ class MediaCoverArtUniversalPlayer(CoordinatorEntity[CoverCoordinator], MediaPla
             return None
 
     @property
-    def supported_features(self) -> int:
+    def supported_features(self) -> MediaPlayerEntityFeature:
         src = self.source_state
         if src is None:
-            return 0
+            return MediaPlayerEntityFeature(0)
         try:
-            return int(src.attributes.get("supported_features", 0))
+            return MediaPlayerEntityFeature(int(src.attributes.get("supported_features", 0)))
         except (TypeError, ValueError):
-            return 0
+            return MediaPlayerEntityFeature(0)
 
     def _source_attr(self, key: str, default: Any = None) -> Any:
         src = self.source_state

@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.3.0 (2026-02-25)
+- `supported_features` gibt jetzt `MediaPlayerEntityFeature` (IntFlag) zurück statt `int` – behebt `TypeError: argument of type 'int' is not iterable` beim Hinzufügen der Entity (HA prüft Feature-Flags mit `in`-Operator)
+
 ## 0.2.9 (2026-02-25)
 - `media_player.__init__`: Beide Basisklassen (`CoordinatorEntity`, `MediaPlayerEntity`) jetzt explizit initialisiert – identisches Muster wie `camera.py`/`image.py`, behebt Entitäts-Erstellungsfehler in neueren HA-Versionen
 - `state`-Property gibt jetzt `MediaPlayerState`-Enum zurück statt plain String (Kompatibilität mit HA-Validierung)
