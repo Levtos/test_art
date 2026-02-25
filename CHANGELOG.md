@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.7 (2026-02-25)
+- `media_player`-Wrapper robuster gemacht, damit die Entität zuverlässig erzeugt wird (reduzierte Attribut-Spiegelung + defensivere Source-Attribut-Lesezugriffe)
+- Universal-Proxy-Verhalten beibehalten: Steuerung bleibt auf dem Source-Player, Cover kommt aus dem Coordinator
+- MusicBrainz User-Agent auf `0.2.7` aktualisiert
+
 ## 0.2.6 (2026-02-25)
 - Universellen `media_player`-Wrapper für Cover-Art dokumentiert (Entity `media_player.*_cover`)
 - Merge-Konflikte für häufig parallel geänderte Doku-Dateien reduziert (`.gitattributes` mit `merge=union` für README/CHANGELOG)
