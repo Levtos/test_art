@@ -1,7 +1,7 @@
 {
   "domain": "media_cover_art",
   "name": "Media Cover Art",
-  "version": "0.2.3",
+  "version": "0.2.6",
   "documentation": "https://github.com/Levtos/test_art",
   "issue_tracker": "https://github.com/Levtos/test_art/issues",
   "codeowners": [

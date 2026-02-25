@@ -11,7 +11,7 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 - Frontend-friendly caching: UI refetches when `image_last_updated` changes
 - Integration icon/logo assets (SVG)
 - Additional Camera entity for Picture Cards (`camera.*_cover_camera`)
-- Additional Media Player wrapper entity with inherited controls + generated cover image (`media_player.*_cover`)
+- Additional universal-style Media Player wrapper entity with inherited controls + generated cover image (`media_player.*_cover`)
 - More robust metadata cleanup (Remix/Edit/Timecode) and query order `Artist Title` → `Title Artist`
 - Keeps last successful cover during temporary API/metadata failures
 - Visible no-cover SVG fallback (`no_cover.svg`) instead of a transparent pixel

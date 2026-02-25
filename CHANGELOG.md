@@ -1,10 +1,9 @@
 # Changelog
 
-## 0.2.3 (2026-02-25)
-- Neue `media_player`-Wrapper-Entity hinzugefügt, die Steuerfunktionen des gewählten Source-Players durchreicht und gleichzeitig das ermittelte Cover als Media-Bild nutzt
-- Wrapper folgt Künstler/Titel-Updates über den bestehenden Coordinator und nutzt denselben Fallback-Mechanismus wie `image`/`camera`
-- Dokumentation um die neue Entity ergänzt
-- MusicBrainz User-Agent auf `0.2.3` aktualisiert
+## 0.2.6 (2026-02-25)
+- Universellen `media_player`-Wrapper für Cover-Art dokumentiert (Entity `media_player.*_cover`)
+- Merge-Konflikte für häufig parallel geänderte Doku-Dateien reduziert (`.gitattributes` mit `merge=union` für README/CHANGELOG)
+- MusicBrainz User-Agent auf `0.2.6` aktualisiert
 
 ## 0.2.2 (2026-02-24)
 - Gemeinsamen Code (`FALLBACK_IMAGE`, `source_name`) aus `image.py` und `camera.py` in neue Datei `helpers.py` ausgelagert (Duplikation beseitigt)
