@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.8 (2026-02-25)
+- `Platform.SENSOR` zu `PLATFORMS` hinzugefügt – Sensor-Entity wurde nie geladen, da sie fehlte
+- `available`-Property korrigiert: gibt jetzt `False` zurück wenn Quelle den State `unavailable`/`unknown` hat (statt immer `True`)
+- `state`-Property korrigiert: gibt `None` zurück wenn kein Source-State vorhanden (HA setzt dann automatisch `unavailable`)
+- `media_image_hash` verbessert: beinhaltet jetzt `last_updated`-Zeitstempel, damit der Browser-Cache invalidiert wird wenn das Cover nach dem Platzhalter nachgeladen wird
+
 ## 0.2.7 (2026-02-25)
 - `media_player`-Wrapper robuster gemacht, damit die Entität zuverlässig erzeugt wird (reduzierte Attribut-Spiegelung + defensivere Source-Attribut-Lesezugriffe)
 - Universal-Proxy-Verhalten beibehalten: Steuerung bleibt auf dem Source-Player, Cover kommt aus dem Coordinator

@@ -63,13 +63,14 @@ class MediaCoverArtUniversalPlayer(CoordinatorEntity[CoverCoordinator], MediaPla
 
     @property
     def available(self) -> bool:
-        return self.source_state is not None
+        src = self.source_state
+        return src is not None and src.state not in {"unavailable", "unknown"}
 
     @property
     def state(self):
         src = self.source_state
         if src is None:
-            return "unavailable"
+            return None
         return src.state
 
     @property
@@ -147,7 +148,13 @@ class MediaCoverArtUniversalPlayer(CoordinatorEntity[CoverCoordinator], MediaPla
     @property
     def media_image_hash(self) -> str | None:
         data: CoverData | None = self.coordinator.data
-        return data.track_key if data else None
+        if not data or not data.track_key:
+            return None
+        # Include last_updated so the hash changes when the cover image loads
+        # after the initial fallback, busting the browser cache.
+        if data.last_updated:
+            return f"{data.track_key}:{data.last_updated.isoformat()}"
+        return data.track_key
 
     async def async_get_media_image(self):
         data: CoverData | None = self.coordinator.data
