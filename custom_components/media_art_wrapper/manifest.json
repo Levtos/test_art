@@ -1,0 +1,15 @@
+{
+  "domain": "media_art_wrapper",
+  "name": "Media Art Wrapper",
+  "version": "1.0.1",
+  "documentation": "https://github.com/Levtos/Media_Art_Wrapper",
+  "issue_tracker": "https://github.com/Levtos/Media_Art_Wrapper/issues",
+  "codeowners": [
+    "@Levtos"
+  ],
+  "config_flow": true,
+  "iot_class": "cloud_polling",
+  "icon": "icon.svg",
+  "dependencies": [],
+  "requirements": []
+}

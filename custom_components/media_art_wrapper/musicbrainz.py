@@ -33,7 +33,7 @@ async def async_musicbrainz_resolve(*, session, query: TrackQuery) -> ResolvedCo
 
     headers = {
         # MusicBrainz asks for a descriptive User-Agent
-        "User-Agent": "media-cover-art-ha/0.2.7 (+https://github.com/Levtos/test_art)",
+        "User-Agent": "media-art-wrapper-ha/1.0.0 (+https://github.com/Levtos/test_art)",
     }
 
     try:

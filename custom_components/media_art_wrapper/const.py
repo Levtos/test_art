@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from homeassistant.const import Platform
 
-DOMAIN = "media_cover_art"
+DOMAIN = "media_art_wrapper"
 
 PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.CAMERA, Platform.MEDIA_PLAYER, Platform.SENSOR]
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.1 (2026-02-25)
+- Lizenzdatei `LICENSE` (MIT) hinzugefügt
+- GitHub `CODEOWNERS` hinzugefügt (`@Levtos`)
+- `manifest.json` gepflegt: Version auf `1.0.1` erhöht und Dokumentations-/Issue-Links auf `Media_Art_Wrapper` aktualisiert
+
 ## 0.3.0 (2026-02-25)
 - `supported_features` gibt jetzt `MediaPlayerEntityFeature` (IntFlag) zurück statt `int` – behebt `TypeError: argument of type 'int' is not iterable` beim Hinzufügen der Entity (HA prüft Feature-Flags mit `in`-Operator)
 
