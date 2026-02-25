@@ -4,7 +4,7 @@ from homeassistant.const import Platform
 
 DOMAIN = "media_cover_art"
 
-PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.CAMERA]
+PLATFORMS: list[Platform] = [Platform.IMAGE, Platform.CAMERA, Platform.MEDIA_PLAYER]
 
 CONF_SOURCE_ENTITY_ID = "source_entity_id"
 CONF_PROVIDERS = "providers"
