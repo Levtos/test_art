@@ -1,5 +1,7 @@
 # Media Art Wrapper (Home Assistant Custom Integration)
 
+![Media Art Wrapper](custom_components/media_art_wrapper/icons/logo.png)
+
 This integration provides cover artwork based on `media_artist` + `media_title` from a selected `media_player`, exposed as **Image**, **Camera**, and an optional **Media Player wrapper** entity.
 
 Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no login required).
@@ -9,12 +11,13 @@ Current providers: **iTunes Search API** + **MusicBrainz/Cover Art Archive** (no
 - Image entity (for example: `image.media_art_wrapper_homepods_cover`)
 - Track change detection: refreshes only when `(artist,title,album)` changes
 - Frontend-friendly caching: UI refetches when `image_last_updated` changes
-- Integration icon/logo assets (SVG)
+- Brand icon/logo assets (PNG) in `icons/` for Home Assistant 2026.3.0+ Brands Proxy API
 - Additional Camera entity for Picture Cards (`camera.*_cover_camera`)
 - Additional universal-style Media Player wrapper entity with inherited controls + generated cover image (`media_player.*_cover`)
 - More robust metadata cleanup (Remix/Edit/Timecode) and query order `Artist Title` → `Title Artist`
 - Keeps last successful cover during temporary API/metadata failures
 - Visible no-cover SVG fallback (`no_cover.svg`) instead of a transparent pixel
+- Integration domain: `media_art_wrapper` — compatible with HA Brands Proxy from version 2026.3.0+
 
 ## Installation
 
